@@ -1,17 +1,5 @@
 <?PHP
-function run($cmd, &$returnVar=null, $echo=true){
-    $output = null;
-    if ($echo){
-        echo "> $cmd \n";
-    }
-    exec($cmd, $output, $returnVar);
-    if ($echo){
-        echo implode("\n", $output);
-        echo "\n";
-    }
-    $GLOBALS['output'] = $output;
-    return $output;
-}
+require(dirname(__FILE__).'/run.php');
 
 
 class git
@@ -60,10 +48,10 @@ class git
     }
 
     public static function svn_update(){
-        if (self::run("svn fetch")){
-            self::run('svn merge git-svn');
+        if ($output = self::run("svn fetch")){
+            $output = self::run('svn merge git-svn');
         }
-        return $GLOBALS['output'];
+        return $output;
     }
 
     public static function checkout($branch){
