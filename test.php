@@ -1,4 +1,4 @@
-#! /usr/bin/env
+#! /usr/bin/env php
 <?php
 /**
  * Created by PhpStorm.
@@ -14,3 +14,5 @@ $r = run('git status');
 //var_dump($r);
 
 run("svn status");
+
+var_dump($GLOBALS);
