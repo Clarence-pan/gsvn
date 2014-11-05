@@ -8,7 +8,11 @@
  */
 function run($cmd, $cwd=null, $env=array()){
     global $echo;
+    global $pwd;
     global $defaultEnv;
+    if ($cwd == null){
+        $cwd = $pwd;
+    }
     $output = null;
     if ($echo){
         echo "> $cmd \n";
@@ -52,3 +56,4 @@ $defaultEnv = array(
     'LANGUAGE' => 'en_US.utf8',
     'LC_ALL' => 'en_US.utf8'
 );
+$pwd = `pwd`;
