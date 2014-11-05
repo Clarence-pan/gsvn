@@ -10,14 +10,24 @@ foreach ($argv as &$arg){
         $arg = "\"$arg\"";
     }
 }
+
+$cmd = array_shift($argv);
+
 $cmdMap = array(
     'a' => 'add',
     's' => 'status',
     'c' => 'commit',
 );
-if (isset($cmdMap[$argv[0]])){
-    $argv[0] = $cmdMap[$argv[0]];
+
+if (isset($cmdMap[$cmd])){
+    $cmd = $cmdMap[$cmd];
 }
 
-run('git '.implode(' ', $argv));
+$forceColorCommands = array('diff');
+if (in_array($cmd, $forceColorCommands)){
+    array_push($argv, '--color=always');
+}
+
+
+run('git '.$cmd.' '.implode(' ', $argv));
 

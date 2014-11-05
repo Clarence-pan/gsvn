@@ -13,9 +13,12 @@ function run($cmd, $cwd=null, $env=array()){
     if ($echo){
         echo "> $cmd \n";
     }
-    $env = array_merge($defaultEnv, $env);
+    $env = array_merge($_SERVER, $defaultEnv, $env);
     $pipes = array();
     $stdout = fopen("php://stdout", 'a');
+    unset($env['argv']);
+    unset($env['argc']);
+//    var_dump($cmd ." 2>&1 ", array(1 => array('pipe', 'w')), $pipes, $cwd, $env);
     $p = proc_open($cmd ." 2>&1 ", array(1 => array('pipe', 'w')), $pipes, $cwd, $env);
     if ($p) {
         do{
