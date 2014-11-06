@@ -98,7 +98,7 @@ class GSvn {
                 go("svn checkout $url .");
             }
             go("git init $path");
-            file_put_contents($path.'/.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
+            file_put_contents(($path ? $path : '.').'/.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
             go("git add .", $path);
             $r = go("svn info");
             $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
@@ -271,7 +271,6 @@ class DocComment {
         }
         $otherPart = substr($cmdline, $i + 1);
         $otherPart = trim($otherPart);
-        $body = $this->readBody($lines);
         switch ($cmd) {
             case '@param':
                 $i = strpos($otherPart, ' ');
@@ -286,6 +285,7 @@ class DocComment {
                 $optional = !!strstr($title, '[optional]') || !!strstr($title, '[opt]');
                 $title = str_replace('[optional]', '', $title);
                 $title = str_replace('[opt]', '', $title);
+                $body = $this->readBody($lines);
                 $this->params[] = array(
                     'name' => $param,
                     'optional' => $optional,
@@ -295,7 +295,8 @@ class DocComment {
                 break;
 
             case '@format':
-                $title = array_shift($body);
+                $title = array_shift($lines);
+                $body = $this->readBody($lines);
                 $this->formats[] = array(
                     'format' => $otherPart,
                     'title' => $title,
@@ -351,7 +352,7 @@ function run_command($cmd, $argv) {
             'defaultValue' => $parameter->isOptional() ? $parameter->getDefaultValue() : null,
             'index' => $paramIndex
         );
-        $paramValues[$paramIndex] = $paramInfo['defaultValue'];
+        @$paramValues[$paramIndex] = $paramInfo['defaultValue'];
         $paramIndex++;
     }
 
