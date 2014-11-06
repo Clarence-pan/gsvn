@@ -1,1 +1,1 @@
-@php g.php %*
+@php %~dp0\g.php %*

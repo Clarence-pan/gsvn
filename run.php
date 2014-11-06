@@ -49,7 +49,7 @@ function run($cmd, $cwd=null, $env=array()){
 
     $output = explode("\n", $output);
 
-    return (object)array('output' => $output, 'return' => $returnVar );
+    return (object)array('output' => $output, 'lastError' => $returnVar , 'success' => (0 == $returnVar));
 }
 //
 //$output = run("svn log ../gsvn-repo");
