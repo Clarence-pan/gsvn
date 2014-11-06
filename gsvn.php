@@ -91,23 +91,21 @@ class GSvn {
      * @param $path - the path to checkout
      */
     public function init($url, $path) {
-        try{
-            if ($path){
-                go("svn checkout $url $path");
-            }else{
-                go("svn checkout $url .");
-            }
-            go("git init $path");
-            file_put_contents(($path ? $path : '.').'/.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
-            go("git add .", $path);
-            $r = go("svn info");
-            $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
-            go("git commit -m\"initialized from svn(r$revision)\"", $path);
-            go("git checkout -b work", $path);
-            go("git checkout -b debug", $path);
-        }catch(Exception $e){
-            echo $e->getMessage().NEW_LINE;
+        if ($path){
+            go("svn checkout $url $path");
+        }else{
+            go("svn checkout $url .");
         }
+        go("git init $path");
+        file_put_contents(($path ? $path : '.').'/.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
+        go("git add .", $path);
+        $r = go("svn info");
+        $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
+        run("git commit -m\"initialized from svn(r$revision)\"", $path);
+        run("git checkout -b work", $path);
+        go("git tag COMMITED-WORK");
+        run("git checkout -b debug", $path);
+        go("git tag COMMITED-DEBUG");
     }
 
     /**
@@ -115,56 +113,114 @@ class GSvn {
      * @param $msg -- message for stash
      */
     public function stash($msg=''){
-        try{
-            go("git add .");
-            go("git commit -m\"STASH: $msg\"");
-        }catch(Exception $e){
-            echo $e->getMessage().NEW_LINE;
-        }
+        go("git add .");
+        go("git commit -m\"STASH: $msg\"");
     }
 
     /**
      * commit to svn
      * @param $msg -- message for commit
+     * @param $continue -- continue cherry-pick and commit
      */
-    public function commit($msg=''){
-        try{
-            go("git add .");
-            go("git commit -m\"STASH: before commit: $msg\"");
-            go("svn commit --message\"$msg\"");
+    public function commit($msg='', $continue=false){
+        try {
+            if (!$msg){
+                echo "Error: please specify the message of commit.".NEW_LINE;
+                return 1;
+            }
+            if (!$continue) {
+                $this->debug();
+                go("git add .");
+                //go("git commit -m\"STASH: before commit: $msg\"");
+                $this->tryCommitGit("STASH: before commit: $msg");
+
+                $logs = $this->getGitLog(' COMMITED-DEBUG..HEAD --no-merges');
+                $logs = array_reverse($logs);
+                array_shift($logs); // 最初一个是已经提交过的
+                $logs = array_filter($logs, function ($log) {
+                    return !preg_match('/^debug/', strtolower($log['comment']));
+                });
+                $shas = array_map(function ($log) {
+                        return $log['sha'];
+                    }, $logs);
+                echo NEW_LINE;
+                echo " Need pickup " . implode(' ', $shas) . NEW_LINE;
+
+                $this->saveState(array(
+                    'state' => 'commit',
+                    'data' => $shas
+                ));
+                go("git checkout work");
+            } else {
+                $data = $this->loadState();
+                if (!$data or $data['state'] != 'commit') {
+                    echo "Error: invalid state!" . NEW_LINE;
+                    die;
+                }
+                $shas = $data['data'];
+                $sha = $data['process'];
+                while ($sha != array_shift($shas)) ;
+            }
+            if ($continue != 'tag') {
+                foreach ($shas as $sha) {
+                    $this->saveState(array(
+                        'state' => 'commit',
+                        'data' => $shas,
+                        'process' => $sha
+                    ));
+                    go("git cherry-pick $sha");
+                }
+                go("svn commit --message \"$msg\"");
+            }else{
+                run("git checkout work");
+            }
+            run("git tag -d COMMITED-WORK");
+            go("git tag COMMITED-WORK HEAD");
+            go("git checkout debug");
+            go("git merge debug");
+            run("git tag -d COMMITED-DEBUG");
+            go("git tag COMMITED-DEBUG HEAD");
+            $this->update();
         }catch(Exception $e){
-            echo $e->getMessage().NEW_LINE;
+            echo "Error: commit failed! Please solve the conflicts and use 'gsvn commit --continue' to go on.";
+            echo NEW_LINE;
+            throw $e;
         }
+    }
+    private $_storeFile = './.git/.gsvn-store';
+    private function saveState($data){
+        file_put_contents($this->_storeFile, var_export($data, true));
+    }
+    private function loadState(){
+        $code = file_get_contents($this->_storeFile);
+        if (!$code){
+            return false;
+        }
+        return eval('return '.$code.';');
     }
 
     /**
      * update the working directory
      */
     public function update(){
-        try{
-            go("git add .");
-            $this->tryCommitGit('STASH: before update');
-            go("git checkout work");
-            go("svn update");
-            go("git add .");
-            $r = go("svn info");
-            $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
-            go("git commit -m\"updated to svn(r$revision)\"");
-            go("git checkout debug");
-            go("git merge work");
-            go("git tag UPDATE-TO-r$revision");
-        }catch(Exception $e){
-            echo $e->getMessage().NEW_LINE;
-        }
+        go("git add .");
+        $this->tryCommitGit('STASH: before update');
+        go("git checkout work");
+        go("svn update");
+        go("git add .");
+        $r = go("svn info");
+        $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
+        //go("git commit -m\"updated to svn(r$revision)\"");
+        $this->tryCommitGit("updated to svn(r$revision)");
+        run("git tag -d UPDATE-TO-r$revision");
+        go("git tag UPDATE-TO-r$revision HEAD");
+        go("git checkout debug");
+        go("git merge work");
     }
 
     public function status(){
-        try{
-            go("svn status");
-            go("git status");
-        }catch(Exception $e){
-            echo $e->getMessage().NEW_LINE;
-        }
+        go("svn status");
+        go("git status");
     }
     private function tryCommitGit($msg){
         try{
@@ -215,6 +271,49 @@ class GSvn {
         foreach ($alias as $full => $a) {
             echo ' '.$full."\t   ".implode(' ', $a);
         }
+    }
+
+    /**
+     * switch to work branch
+     */
+    public function work(){
+        if ($this->getCurrentBranch() != 'work'){
+            go("git checkout work");
+        }
+    }
+
+    /**
+     * switch to debug branch
+     */
+    public function debug(){
+        if ($this->getCurrentBranch() != 'debug'){
+            go("git checkout debug");
+        }
+        go("git merge work");
+    }
+
+    private function getCurrentBranch(){
+        $r = go("git status");
+        $m = $this->findFirstMatch('/On branch (\w+)/', $r->output);
+        return $m;
+    }
+
+    private function getGitLog($options){
+        $r = go("git log --format=\"format:%h %s\" $options");
+        $ret = array();
+        foreach ($r->output as $line) {
+            $line = trim($line);
+            list($sha, $comment) = $this->splitFirst($line);
+            $ret[$sha] = array('sha' => $sha, 'comment' => $comment);
+        }
+        return $ret;
+    }
+
+    // split the $line into 2 parts, by $spliter
+    private function splitFirst($line, $spliter = ' '){
+        $pos = strpos($line, $spliter);
+        return array(substr($line, 0, $pos),
+                     substr($line, $pos + 1));
     }
 }
 
@@ -332,15 +431,35 @@ function get_full_command($cmd, $argv) {
 function run_command($cmd, $argv) {
     $gsvn = new GSvn();
     $class = get_class($gsvn);
+
+    $method = null;
     try {
         $method = new ReflectionMethod($class, $cmd);
-    } catch (Exception $e) {
-    }
+    } catch (Exception $e) {}
+
     if (!$method or !$method->isPublic()) {
         echo "Error: command '$cmd' does NOT exist!\n";
         $cmd = 'help';
+        $method = new ReflectionMethod($class, $cmd);
+        $paramValues = array();
+    }  else {
+        $paramValues = get_param_values($argv, $method);
     }
+    try {
+        return call_user_func_array(array($gsvn, $cmd), $paramValues);
+    }catch(Exception $e) {
+        echo $e->getMessage() . NEW_LINE;
+        return $e->getCode();
+    }
+}
 
+/**
+ * @param $argv
+ * @param $method
+ * @return array
+ */
+function get_param_values($argv, $method)
+{
     $parameters = $method->getParameters();
     $paramInfo = array();
     $paramValues = array();
@@ -356,15 +475,15 @@ function run_command($cmd, $argv) {
         $paramIndex++;
     }
 
-    while (count($argv)){
+    while (count($argv)) {
         $arg = array_shift($argv);
-        if (strpos($arg, '--') === 0){
+        if (strpos($arg, '--') === 0) {
             $argName = substr($arg, 2);
             $param = $paramInfo[$argName];
             unset($paramInfo[$argName]);
-            if (count($argv) > 0){
+            if (count($argv) > 0) {
                 $argValue = array_shift($argv);
-                if (strpos($argValue, '--') === 0){
+                if (strpos($argValue, '--') === 0) {
                     array_unshift($argv, $argValue);
                     $argValue = new Setted(); // 可以用isset来判断此开关
                 }
@@ -376,16 +495,16 @@ function run_command($cmd, $argv) {
             $argValue = $arg;
         }
 
-        if (!$param){
-            echo "Error: unknown parameter: $arg".NEW_LINE;
+        if (!$param) {
+            echo "Error: unknown parameter: $arg" . NEW_LINE;
             die;
         }
 
         $paramValues[$param['index']] = $argValue;
     }
-
-    return call_user_func_array(array($gsvn, $cmd), $paramValues);
+    return $paramValues;
 }
+
 /*
  * run $cmd
  * if failed, throw exception.
