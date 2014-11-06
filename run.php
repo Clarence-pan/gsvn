@@ -37,7 +37,6 @@ function run($cmd, $cwd=null, $env=array()){
             fwrite($stdout, $block);
             fflush($stdout);
             $output .= $block;
-            break;
         }while(!feof($pipes[1]));
 
         fclose($stdout);
