@@ -1,5 +1,10 @@
 <?php
 
+function dump(){
+    return;
+    return call_user_func_array('var_dump', func_get_args());
+}
+
 /**
  * @param string $cmd  命令
  * @param bool $echo 是否回显内容
@@ -22,8 +27,10 @@ function run($cmd, $cwd=null, $env=array()){
     $stdout = fopen("php://stdout", 'a');
     unset($env['argv']);
     unset($env['argc']);
-//    var_dump($cmd ." 2>&1 ", array(1 => array('pipe', 'w')), $pipes, $cwd, $env);
+    dump($cmd ." 2>&1 ", array(1 => array('pipe', 'w')), $pipes, $cwd, $env);
     $p = proc_open($cmd ." 2>&1 ", array(1 => array('pipe', 'w')), $pipes, $cwd, $env);
+    dump($p, $pipes);
+    dump($GLOBALS);
     if ($p) {
         do{
             $block = fread($pipes[1], 1024 * 4);
@@ -56,4 +63,11 @@ $defaultEnv = array(
     'LANGUAGE' => 'en_US.utf8',
     'LC_ALL' => 'en_US.utf8'
 );
-$pwd = `pwd`;
+
+// windows:
+$pwd = trim(`cd`, " \t\n\r");
+if (!$pwd){
+    // linux: get current working directory path
+    $pwd = trim(`pwd`, " \t\n\r");
+}
+
