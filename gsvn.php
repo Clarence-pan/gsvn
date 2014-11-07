@@ -116,12 +116,14 @@ class GSvn {
      * @param $msg -- message for stash
      */
     public function stash($msg=''){
-        go("git add .");
-        go("git commit -m\"STASH: $msg\"");
+//        go("git add .");
+//        go("git commit -m\"STASH: $msg\"");
+        run('git stash');
     }
 
     /**
      * commit to svn
+     * note: commit which begins with 'debug' will NOT be commited!
      * @param $msg -- message for commit
      * @param $continue -- continue cherry-pick and commit
      */
@@ -133,15 +135,15 @@ class GSvn {
             }
             if (!$continue) {
                 $this->debug();
-                go("git add .");
-                //go("git commit -m\"STASH: before commit: $msg\"");
-                $this->tryCommitGit("STASH: before commit: $msg");
+                $this->stash("before commit $msg");
 
                 $logs = $this->getGitLog(' COMMITED-DEBUG..HEAD --no-merges');
                 $logs = array_reverse($logs);
                 array_shift($logs); // 最初一个是已经提交过的
                 $logs = array_filter($logs, function ($log) {
-                    return !preg_match('/^debug/', strtolower($log['comment']));
+                    $comment = strtolower($log['comment']);
+                    return !preg_match('/^debug/', $comment)
+                        and !preg_match('/^updated to svn/', $comment);
                 });
                 $shas = array_map(function ($log) {
                         return $log['sha'];
@@ -206,8 +208,7 @@ class GSvn {
      * update the working directory
      */
     public function update(){
-        go("git add .");
-        $this->tryCommitGit('STASH: before update');
+        $this->stash('before update');
         go("git checkout work");
         go("svn update");
         go("git add .");
