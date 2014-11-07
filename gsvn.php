@@ -1,7 +1,7 @@
 #! /usr/bin/env php
 <?php
 
-require(dirname(__FILE__) . '/run.php');
+require(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'run.php');
 
 define('NEW_LINE', "\n");
 array_shift($argv);
@@ -19,6 +19,9 @@ return run_command($cmd, $argv);
  * Hope it works!
  */
 class GSvn {
+    public function __construct(){
+        $this->_storeFile = str_replace('/', DIRECTORY_SEPARATOR, $this->_storeFile);
+    }
     /**
      * help to use gsvn
      * @format help [<cmd>]
@@ -97,7 +100,7 @@ class GSvn {
             go("svn checkout $url .");
         }
         go("git init $path");
-        file_put_contents(($path ? $path : '.').'/.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
+        file_put_contents(($path ? $path : '.').DIRECTORY_SEPARATOR.'.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
         go("git add .", $path);
         $r = go("svn info");
         $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
