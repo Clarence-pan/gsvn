@@ -37,6 +37,9 @@ class GSvn {
             echo NEW_LINE;
             echo 'Commands:' . NEW_LINE;
             foreach ($methods as $m) {
+                if (preg_match('/^_/', $m->getName())){
+                    continue;
+                }
                 $doc = new DocComment($m->getDocComment());
                 echo "  " . $m->getName() . "\t- " . $doc->title . " " . NEW_LINE;
             }
