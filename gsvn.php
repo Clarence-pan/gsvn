@@ -181,6 +181,11 @@ class GSvn {
             }
             run("git tag -d COMMITED-WORK");
             go("git tag COMMITED-WORK HEAD");
+            $r = go("svn status");
+            if (trim(implode("", $r->output)) != ""){
+				echo "Error: svn and work do NOT match! Please update work.".NEW_LINE;
+				return 1;
+            }
             go("git checkout debug");
             go("git merge debug");
             run("git tag -d COMMITED-DEBUG");
