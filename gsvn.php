@@ -8,6 +8,8 @@ array_shift($argv);
 
 $alias = array(
     'help' => array('', '-?', '/?', '-h', '/h', '--help', 'help'),
+    'qcommit' => array("qc", 'qco'),
+    'commit' => array('c', 'co')
 );
 
 $cmd = strtolower(array_shift($argv));
@@ -121,11 +123,29 @@ class GSvn {
     public function stash($msg=''){
 //        go("git add .");
 //        go("git commit -m\"STASH: $msg\"");
-        $r = run("git status");
-        if ($r->success && strstr($r->output[1], 'nothing to commit')){
-            return;
+        if ($this->isGitDirty()){
+            run('git stash');
         }
-        run('git stash');
+    }
+
+    private function isGitDirty(){
+        $r = run("git status");
+        if (!$r->success){
+            return false;
+        }
+        if (strstr($r->output[1], 'nothing to commit')){
+            return false;
+        }
+        return true;
+    }
+
+    private function getGitCurrentBranch(){
+        $r = run("git status");
+        if (!$r->success){
+            return false;
+        }
+        preg_match('/On branch (\w+)/', $r->output[0], $matches);
+        return $matches[1];
     }
 
     /**
@@ -142,7 +162,11 @@ class GSvn {
             }
             if (!$continue) {
                 $this->debug();
-                $this->stash("before commit $msg");
+                //$this->stash("before commit $msg");
+                if ($this->isGitDirty()){
+                    echo "Error: dirty working directory! Please stash or commit local changes to git.";
+                    die;
+                }
 
                 $logs = $this->getGitLog(' COMMITED-DEBUG..HEAD --no-merges');
                 $logs = array_reverse($logs);
@@ -209,11 +233,12 @@ class GSvn {
      * 提交到git，并提交svn
      * @param $msg 提交的消息
      * @param $continue 是否继续
+     * @alias qc
      */
-    public function dcommit($msg, $continue=false){
+    public function qcommit($msg, $continue=false){
         go("git status");
         go("git add .");
-        go("git commit --message \"$msg\"");
+        $this->tryCommitGit($msg);
         $this->commit($msg, $continue);
     }
 
@@ -258,10 +283,10 @@ class GSvn {
     }
     private function tryCommitGit($msg){
         try{
-            $r = go("git commit -m\"$msg\"");
-        }catch(Exception $e){
-            if (strstr(implode(' ', $e->result->output), 'nothing to commit')){
-                return $e->result;
+            $r = go("git commit --message \"$msg\"");
+        }catch(CmdFailException $e){
+            if (strstr(implode(' ', $e->getResult()->output), 'nothing to commit')){
+                return $e->getResult();
             }
             throw $e;
         }
@@ -447,7 +472,24 @@ function get_param_values($argv, $method)
     }
     return $paramValues;
 }
-
+class CmdFailException extends Exception{
+    private $cmd;
+    private $result;
+    public function __construct($cmd, $result, $msg=null){
+        if (!$msg){
+            $msg = "run \"$cmd\" failed, last error is ".$result->lastError;
+        }
+        $this->cmd = $cmd;
+        $this->result = $result;
+        parent::__construct($msg, $errorCode);
+    }
+    public function getCmd(){
+        return $this->cmd;
+    }
+    public function getResult(){
+        return $this->result;
+    }
+}
 /*
  * run $cmd
  * if failed, throw exception.
@@ -455,9 +497,7 @@ function get_param_values($argv, $method)
 function go($cmd, $cwd=null, $env=array()){
     $r = run($cmd, $cwd, $env);
     if (!$r->success){
-        $e = new Exception("run \"$cmd\" failed, last error is ".$r->lastError, $r->lastError);
-        $e->result = $r;
-        throw $e;
+        throw new CmdFailException($cmd, $r);
     }
     return $r;
 }
