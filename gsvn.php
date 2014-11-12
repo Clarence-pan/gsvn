@@ -256,9 +256,12 @@ class GSvn {
 
     /**
      * update the working directory
+     * @param $nostash - don't stash, just update it!
      */
-    public function update(){
-        $this->stash('before update');
+    public function update($nostash){
+        if (!$nostash){
+            $this->stash('before update');
+        }
         go("git checkout work");
         go("svn update");
         go("git add .");
@@ -277,9 +280,38 @@ class GSvn {
         go("git merge work");
     }
 
+    /**
+     * see the status of git and svn
+     */
     public function status(){
         go("svn status");
         go("git status");
+    }
+
+    /**
+     * validate it
+     * @param $nostash - don't stash, just update it!
+     */
+    public function validate($nostash){
+        if (!$nostash){
+            $this->stash('before update');
+        }
+        go("git checkout work");
+        $r = go("svn status");
+        if (trim(implode("", $r->output)) != ""){
+            echo "Error: svn and work do NOT match! Please update work.".NEW_LINE;
+            return 1;
+        }else{
+            echo "It's OK.".NEW_LINE;
+            go("git checkout debug");
+            return 0;
+        }
+    }
+    /*
+     * use tools to resolve conflicts
+     */
+    public function resolvetool(){
+        run('tortoisegitproc /command:resolve');
     }
     private function tryCommitGit($msg){
         try{
