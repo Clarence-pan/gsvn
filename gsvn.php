@@ -218,7 +218,7 @@ class GSvn {
 				return 1;
             }
             go("git checkout debug");
-            go("git merge debug");
+            go("git merge work");
             run("git tag -d COMMITED-DEBUG");
             go("git tag COMMITED-DEBUG HEAD");
             $this->update();
