@@ -9,7 +9,10 @@ array_shift($argv);
 $alias = array(
     'help' => array('', '-?', '/?', '-h', '/h', '--help', 'help'),
     'qcommit' => array("qc", 'qco'),
-    'commit' => array('c', 'co')
+    'commit' => array('c', 'co'),
+    'tsvn' => array('ts'),
+    'tgit' => array('tg'),
+    'validate' => array('v', 'va'),
 );
 
 $cmd = strtolower(array_shift($argv));
@@ -153,10 +156,11 @@ class GSvn {
      * note: commit which begins with 'debug' will NOT be commited!
      * @param $msg -- message for commit
      * @param $continue -- continue cherry-pick and commit
+     * @param $confirm -- wether to confirm before commit
      */
-    public function commit($msg='', $continue=false){
+    public function commit($msg='', $continue=false, $confirm=false){
         try {
-            if (!$msg){
+            if (!$msg && !$confirm){
                 echo "Error: please specify the message of commit.".NEW_LINE;
                 return 1;
             }
@@ -170,7 +174,7 @@ class GSvn {
 
                 $logs = $this->getGitLog(' COMMITED-DEBUG..HEAD --no-merges');
                 $logs = array_reverse($logs);
-                array_shift($logs); // 最初一个是已经提交过的
+//                array_shift($logs); // 最初一个是已经提交过的
                 $logs = array_filter($logs, function ($log) {
                     $comment = strtolower($log['comment']);
                     return !preg_match('/^debug/', $comment)
@@ -206,7 +210,11 @@ class GSvn {
                     ));
                     go("git cherry-pick $sha");
                 }
-                go("svn commit --message \"$msg\"");
+                if ($confirm){
+                    $this->tsvn("commit");
+                }else{
+                    go("svn commit --message \"$msg\"");
+                }
             }else{
                 run("git checkout work");
             }
@@ -307,11 +315,45 @@ class GSvn {
             return 0;
         }
     }
-    /*
+    /**
      * use tools to resolve conflicts
      */
     public function resolvetool(){
         run('tortoisegitproc /command:resolve');
+    }
+
+    /**
+     * use tgit tool
+     * @param $cmd - the cmd to tgit, like: log, resolve
+     */
+    public function tgit($cmd){
+        run("tortoisegitproc /command:$cmd");
+    }
+    /**
+     * use tsvn tool
+     * @param $cmd - the cmd to tgit, like: log, diff
+     * @param $path - the path
+     */
+    public function tsvn($cmd, $path){
+        $path = $path ? $path : '.';
+        run("TortoiseProc /command:$cmd /path:$path");
+    }
+    /**
+     * use tsvn log tool to show log
+     * @param $path - the path to show
+     */
+    public function tsvnlog($path=null){
+        $path = $path ? $path : '.';
+        run('TortoiseProc.exe /command:log /path:'.$path);
+    }
+
+    /**
+     * use tsvn diff tool to show what's changed
+     * @param $path - the path to show
+     */
+    public function tsvndiff($path=null){
+        $path = $path ? $path : '.';
+        run("TortoiseProc.exe /command:diff /path:$path");
     }
     private function tryCommitGit($msg){
         try{
@@ -513,7 +555,7 @@ class CmdFailException extends Exception{
         }
         $this->cmd = $cmd;
         $this->result = $result;
-        parent::__construct($msg, $errorCode);
+        parent::__construct($msg, $result->lastError);
     }
     public function getCmd(){
         return $this->cmd;
