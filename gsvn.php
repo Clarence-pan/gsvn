@@ -177,8 +177,7 @@ class GSvn {
 //                array_shift($logs); // 最初一个是已经提交过的
                 $logs = array_filter($logs, function ($log) {
                     $comment = strtolower($log['comment']);
-                    return !preg_match('/^debug/', $comment)
-                        and !preg_match('/^updated to svn/', $comment);
+                    return preg_match('/^work/', $comment);
                 });
                 $shas = array_map(function ($log) {
                         return $log['sha'];
@@ -229,7 +228,7 @@ class GSvn {
             go("git merge work");
             run("git tag -d COMMITED-DEBUG");
             go("git tag COMMITED-DEBUG HEAD");
-            $this->update();
+            $this->update(true);
         }catch(Exception $e){
             echo "Error: commit failed! Please solve the conflicts and use 'gsvn commit --continue' to go on.";
             echo NEW_LINE;
