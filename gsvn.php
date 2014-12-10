@@ -152,6 +152,15 @@ class GSvn {
     }
 
     /**
+     * like git tag
+     * NOTE: if exists tag, will delete tag firstly.
+     * @param $tag
+     */
+    public function tag($tag){
+        go("git tag -d $tag");
+        run("git tag $tag");
+    }
+    /**
      * commit to svn
      * note: commit which begins with 'debug' will NOT be commited!
      * @param $msg -- message for commit
@@ -165,69 +174,25 @@ class GSvn {
                 return 1;
             }
             if (!$continue) {
-                $this->debug();
                 //$this->stash("before commit $msg");
                 if ($this->isGitDirty()){
                     echo "Error: dirty working directory! Please stash or commit local changes to git.";
                     die;
                 }
-
-                $logs = $this->getGitLog(' COMMITED-DEBUG..HEAD --no-merges');
-                $logs = array_reverse($logs);
-//                array_shift($logs); // 最初一个是已经提交过的
-                $logs = array_filter($logs, function ($log) {
-                    $comment = strtolower($log['comment']);
-                    return preg_match('/^work/', $comment);
-                });
-                $shas = array_map(function ($log) {
-                        return $log['sha'];
-                    }, $logs);
-                echo NEW_LINE;
-                echo " Need pickup " . implode(' ', $shas) . NEW_LINE;
-
-                $this->saveState(array(
-                    'state' => 'commit',
-                    'data' => $shas
-                ));
-                go("git checkout work");
+                run("git cherry-pick REVERT-DEBUG");
             } else {
                 $data = $this->loadState();
                 if (!$data or $data['state'] != 'commit') {
                     echo "Error: invalid state!" . NEW_LINE;
                     die;
-                }
-                $shas = $data['data'];
-                $sha = $data['process'];
-                while ($sha != array_shift($shas)) ;
+                } ;
             }
-            if ($continue != 'tag') {
-                foreach ($shas as $sha) {
-                    $this->saveState(array(
-                        'state' => 'commit',
-                        'data' => $shas,
-                        'process' => $sha
-                    ));
-                    go("git cherry-pick $sha");
-                }
-                if ($confirm){
-                    $this->tsvn("commit");
-                }else{
-                    go("svn commit --message \"$msg\"");
-                }
+            if ($confirm){
+                $this->tsvn('commit');
             }else{
-                run("git checkout work");
+                run("svn commit --message \"$msg\"");
             }
-            run("git tag -d COMMITED-WORK");
-            go("git tag COMMITED-WORK HEAD");
-            $r = go("svn status");
-            if (trim(implode("", $r->output)) != ""){
-				echo "Error: svn and work do NOT match! Please update work.".NEW_LINE;
-				return 1;
-            }
-            go("git checkout debug");
-            go("git merge work");
-            run("git tag -d COMMITED-DEBUG");
-            go("git tag COMMITED-DEBUG HEAD");
+            $this->tag('COMMITED');
             $this->update(true);
         }catch(Exception $e){
             echo "Error: commit failed! Please solve the conflicts and use 'gsvn commit --continue' to go on.";
@@ -269,7 +234,6 @@ class GSvn {
         if (!$nostash){
             $this->stash('before update');
         }
-        go("git checkout work");
         go("svn update");
         go("git add .");
         $r = go("svn info");
