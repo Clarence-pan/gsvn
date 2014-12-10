@@ -13,6 +13,8 @@ $alias = array(
     'tsvn' => array('ts'),
     'tgit' => array('tg'),
     'validate' => array('v', 'va'),
+    'revertdebug' => array('revert-debug', 'undebug', 'udbg', 'ud'),
+    'applydebug' => array('apply-debug', 'redebug', 'ad'),
 );
 
 $cmd = strtolower(array_shift($argv));
@@ -109,14 +111,14 @@ class GSvn {
         }
         go("git init $path");
         file_put_contents(($path ? $path : '.').DIRECTORY_SEPARATOR.'.gitignore', implode(NEW_LINE, array('.svn/', '.bak', '~')));
+        go('git config core.autocrlf false');
+        go('git config core.crlf crlf');
         go("git add .", $path);
         $r = go("svn info");
         $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
         run("git commit -m\"initialized from svn(r$revision)\"", $path);
-        run("git checkout -b work", $path);
-        go("git tag COMMITED-WORK");
+        run("git checkout -b svn", $path);
         run("git checkout -b debug", $path);
-        go("git tag COMMITED-DEBUG");
     }
 
     /**
@@ -154,10 +156,10 @@ class GSvn {
     /**
      * like git tag
      * NOTE: if exists tag, will delete tag firstly.
-     * @param $tag
+     * @param $tag -- tag name
      */
     public function tag($tag){
-        go("git tag -d $tag");
+        run("git tag -d $tag");
         run("git tag $tag");
     }
     /**
@@ -179,13 +181,13 @@ class GSvn {
                     echo "Error: dirty working directory! Please stash or commit local changes to git.";
                     die;
                 }
-                run("git cherry-pick REVERT-DEBUG");
+                $this->revertdebug();
             } else {
                 $data = $this->loadState();
                 if (!$data or $data['state'] != 'commit') {
                     echo "Error: invalid state!" . NEW_LINE;
                     die;
-                } ;
+                }
             }
             if ($confirm){
                 $this->tsvn('commit');
@@ -194,6 +196,7 @@ class GSvn {
             }
             $this->tag('COMMITED');
             $this->update(true);
+            $this->applydebug();
         }catch(Exception $e){
             echo "Error: commit failed! Please solve the conflicts and use 'gsvn commit --continue' to go on.";
             echo NEW_LINE;
@@ -231,8 +234,14 @@ class GSvn {
      * @param $nostash - don't stash, just update it!
      */
     public function update($nostash){
-        if (!$nostash){
-            $this->stash('before update');
+        $initial = $this->getCurrentStatus();
+        if ($initial['isDirty']){
+            if (!$nostash){
+                $this->stash('before update');
+            }
+        }
+        if ($initial['branch'] != 'svn'){
+            run('git checkout svn');
         }
         go("svn update");
         go("git add .");
@@ -242,13 +251,8 @@ class GSvn {
         $this->tryCommitGit("updated to svn(r$revision)");
         run("git tag -d UPDATE-TO-r$revision");
         go("git tag UPDATE-TO-r$revision HEAD");
-		$r = go("svn status");
-		if (trim(implode("", $r->output)) != ""){
-			echo "Error: svn and work do NOT match! Please update work.".NEW_LINE;
-			return 1;
-		}
-        go("git checkout debug");
-        go("git merge work");
+        go("git checkout ".$initial['branch']);
+        go("git merge svn");
     }
 
     /**
@@ -385,13 +389,35 @@ class GSvn {
         if ($this->getCurrentBranch() != 'debug'){
             go("git checkout debug");
         }
-        go("git merge work");
+        go("git merge svn");
+        $this->applydebug();
+    }
+
+    /**
+     * apply debug code (tag APPLY-DEBUG)
+     */
+    public function applydebug(){
+        go('git cherry-pick APPLY-DEBUG');
+    }
+
+    /**
+     * revert debug code (apply tag REVERT-DEBUG)
+     */
+    public function revertdebug(){
+        go('git cherry-pick REVERT-DEBUG');
     }
 
     private function getCurrentBranch(){
         $r = go("git status");
-        $m = $this->findFirstMatch('/On branch (\w+)/', $r->output);
+        $m = $this->findFirstMatch('/On branch (\S+)/', $r->output);
         return $m;
+    }
+
+    private function getCurrentStatus(){
+        $r = go("git status");
+        $m = $this->findFirstMatch('/On branch (\S+)/', $r->output);
+
+        return array('branch' => $m, 'isDirty' => !strstr($r->output[1], 'nothing to commit'));
     }
 
     private function getGitLog($options){
