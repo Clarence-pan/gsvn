@@ -1,1 +1,1 @@
-@php %~dp0\gsvn.php %*
+@python %~dp0\gsvn.py %*

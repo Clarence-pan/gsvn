@@ -244,11 +244,11 @@ class GSvn {
             run('git checkout svn');
         }
         go("svn update");
-        go("git add .");
         $r = go("svn info");
         $revision = $this->findFirstMatch('/Revision:\s(\d+)/', $r->output);
         //go("git commit -m\"updated to svn(r$revision)\"");
-        $this->tryCommitGit("updated to svn(r$revision)");
+        go("git add .");
+        $this->tryCommitGit("updated to svn(r$revision)", '.');
         run("git tag -d UPDATE-TO-r$revision");
         go("git tag UPDATE-TO-r$revision HEAD");
         go("git checkout ".$initial['branch']);
@@ -322,9 +322,9 @@ class GSvn {
         $path = $path ? $path : '.';
         run("TortoiseProc.exe /command:diff /path:$path");
     }
-    private function tryCommitGit($msg){
+    private function tryCommitGit($msg, $dir=''){
         try{
-            $r = go("git commit --message \"$msg\"");
+            $r = go("git commit $dir --message \"$msg\"");
         }catch(CmdFailException $e){
             if (strstr(implode(' ', $e->getResult()->output), 'nothing to commit')){
                 return $e->getResult();
