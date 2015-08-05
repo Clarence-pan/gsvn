@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from pygsvn.cli import *
 from pygsvn.util import *
-from pygsvn import git
+from pygsvn import git, svn
 from pygsvn.cmd import tsvn, update
 import os, json
 STATE_FILE = os.path.join(*('./.git/.gsvn-store'.split('/')))
@@ -33,7 +33,8 @@ def execute(msg='', *args, **kwargs):
         if needConfirm:
             tsvn.execute('commit')
         else:
-            run('svn commit --message "%s"' % msg)
+            # run('svn commit --message "%s"' % msg)
+            svn.commit(msg)
 
         git.tag('COMMITED')
         update.execute(True)

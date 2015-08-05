@@ -1,5 +1,4 @@
 from pygsvn import git
-from pygsvn.cmd import stash
 from pygsvn.cli import *
 
 def execute(nostash=True, *args):
@@ -8,7 +7,7 @@ def execute(nostash=True, *args):
     :param nostash: - don't stash, just update it!
     '''
     if not nostash:
-        stash.execute('before validate')
+        git.stash('before validate')
 
     initial_branch = git.checkout_branch('svn', returnOld=True)
     r = run_check_output('svn status')

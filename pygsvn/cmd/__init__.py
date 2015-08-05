@@ -43,9 +43,10 @@ def get_all_alias():
         'help': ('?', 'h', 'help'),
         'qcommit': ("qc", 'qco'),
         'commit': ('c', 'co'),
-        'tsvn': ('ts'),
-        'tgit': ('tg'),
+        'tsvn': ('ts',),
+        'tgit': ('tg',),
         'validate': ('v', 'va'),
         'revertdebug': ('undebug', 'udbg', 'ud'),
         'applydebug': ('apply-debug', 'redebug', 'ad'),
+        'status': ('st',)
     }
