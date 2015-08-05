@@ -8,7 +8,7 @@ def execute():
     '''
     git.stash('before make-debug')
     run_check_return('svn revert -R .')
-    run_check_return('git add .')
+    run_check_return('git add --all .')
     r = run_check_output('git commit . -m "revert-debug"')
     commit = find_first_group_matches('\[.+\s+(.*)\]', r)
     if not commit:

@@ -29,7 +29,7 @@ def execute(nostash=False, *args):
 
     status = git.get_status()
     if status['files']:
-        run_check_return('git add .')
+        run_check_return('git add --all .')
         run_check_return('git commit . -m "update to svn(r%s)"' % revision)
 
     git.tag('UPDATE-TO-r%s' % revision)

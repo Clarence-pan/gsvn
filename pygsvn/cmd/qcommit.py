@@ -12,6 +12,6 @@ def execute(msg=None, *args, **kwargs):
         sys.exit(1)
 
     run('git status')
-    run('git add .')
+    run('git add --all .')
     git.try_commit(msg)
     commit.execute(msg, **kwargs)

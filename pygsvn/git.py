@@ -36,8 +36,9 @@ def stash(msg='', check_dirty=True):
         # run('git stash save "%s"' % msg)
         old_branch = get_current_branch()
         import time
+        msg = msg or "stash at " + time.strftime("%Y-%m-%d-%H:%M:%S")
         run_check_return('git checkout -b stash-%s' % time.strftime("%Y%m%d-%H%M%S"))
-        run_check_return('git add .')
+        run_check_return('git add --all .')
         run_check_return('git commit -m "%s"' % msg)
         run_check_return('git checkout "%s"' % old_branch)
 

@@ -12,10 +12,10 @@ def execute(url, path='.', *args):
     file_put_contents(os.path.join(path, '.gitignore'), "\n".join(['.svn/', '.bak', '~']))
     run('git config core.autocrlf false')
     os.chdir(path)
-    run('git add .')
+    run('git add --all .')
     output = run_check_output('svn info')
     revision = find_first_group_matches(r'Revision:\s(\d+)', output)
     run('git commit -m "initialized from svn(r%s)"' % revision)
     run('git checkout -b svn')
     run('git checkout -b debug')
-    print 'Initialization done.'
+    print 'Initialization done. Enjoy yourself!'
