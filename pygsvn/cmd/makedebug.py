@@ -2,10 +2,10 @@ from pygsvn import git
 from pygsvn.cli import *
 from pygsvn.util import *
 
+name = 'make-debug'
+
 def execute():
-    '''
-    make debug from SVN changes
-    '''
+    ''' make debug from SVN changes '''
     git.stash('before make-debug')
     run_check_return('svn revert -R .')
     run_check_return('git add --all .')

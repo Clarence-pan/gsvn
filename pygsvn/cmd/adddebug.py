@@ -2,6 +2,7 @@ from pygsvn import git, svn
 from pygsvn.util import *
 from pygsvn.cli import *
 
+name = 'add-debug'
 
 def execute(commit='HEAD'):
     '''

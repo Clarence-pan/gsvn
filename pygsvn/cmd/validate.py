@@ -1,11 +1,14 @@
 from pygsvn import git
 from pygsvn.cli import *
+from pygsvn.cmd import Option
+
+aliases = ('v', 'va')
+options = (
+    Option('nostash', ('n', 'no-stash'), desc='not to stash before update'),
+)
 
 def execute(nostash=True):
-    '''
-    validate it
-    :param nostash: - don't stash, just update it!
-    '''
+    ''' validate it '''
     if not nostash:
         git.stash('before validate')
 

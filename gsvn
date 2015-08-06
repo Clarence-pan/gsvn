@@ -1,4 +1,4 @@
 #!/bin/sh
 
 exepath=`realpath $0`
-python `dirname $exepath`/gsvn.py
+python `dirname $exepath`/gsvn.py $*

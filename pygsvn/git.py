@@ -6,12 +6,12 @@ import os
 TAG_APPLY_DEBUG = 'APPLY-DEBUG'
 
 def is_dirty():
-    r = run_check_output('git status --porcelain')
+    r = run_check_output('git status --porcelain') or ''
     files = [ str_split2(x.strip()) for x in r.split("\n") if x.strip() != '' ]
     return len(files) > 0
 
 def get_status():
-    r = run_check_output('git status --porcelain')
+    r = run_check_output('git status --porcelain') or ''
     files = [ str_split2(x.strip()) for x in r.split("\n") if x.strip() != '' ]
     return {
         'branch' : get_current_branch(),
@@ -101,7 +101,7 @@ def try_commit(msg, dir='.'):
         pass
 
 def has_conflicts(path='.'):
-    r = run_check_output('git status --porcelain')
+    r = run_check_output('git status --porcelain') or ''
     files = [ str_split2(x.strip()) for x in r.split("\n") if x.strip() != '' ]
     for status, file in files:
         if 'U' in status:

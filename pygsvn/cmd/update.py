@@ -6,8 +6,7 @@ from pygsvn import git, svn
 from pygsvn.cmd import Option
 
 options = (
-    # name        short  alternative
-    Option('nostash', ('n', 'no-stash')),
+    Option('nostash', ('n', 'no-stash'), desc='not to stash before update'),
 )
 
 def execute(nostash=False):

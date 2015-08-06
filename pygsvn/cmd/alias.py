@@ -1,10 +1,11 @@
-from pygsvn.cmd import help
+from pygsvn.cmd import help, Option
+
+options = (
+    Option('alias', ('a', 'name'), type='string', desc='name of which alias to show'),
+)
 
 def execute(alias=None):
-    '''
-    there are many aliases, this command show the aliases
-    :param alias: which alias to display
-    '''
+    '''there are many aliases, this command show the aliases '''
     if alias == None:
         for full_cmd, aliases in help.get_all_alias().items():
             print "%-15s  %s" % (full_cmd, ', '.join(aliases))

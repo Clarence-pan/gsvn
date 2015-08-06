@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-import subprocess, sys
+import subprocess, sys, os
+from pygsvn.util import *
 
 # IS_VERBOSE_MODE = '-v' in sys.argv or '--verbose' in sys.argv
 IS_VERBOSE_MODE = True
@@ -7,18 +8,24 @@ IS_VERBOSE_MODE = True
 def is_verbose_mode():
     return IS_VERBOSE_MODE
 
+def call_subprocess(fn, cmd, *params, **kwargs):
+    if os.name == 'posix':
+        fn(cmd.split(' '), *params, **kwargs)
+    else:
+        fn(cmd, *params, **kwargs)
+
 def run(cmd):
     _print_prompt(cmd)
-    return subprocess.call(cmd)
+    return call_subprocess(subprocess.call, cmd)
 
 def run_check_return(cmd, *args, **kwargs):
     _print_prompt(cmd)
-    return subprocess.check_call(cmd, *args, **kwargs)
+    return call_subprocess(subprocess.check_call, cmd, *args, **kwargs)
 
 def run_check_confirm(cmd, *args, **kwargs):
     _print_prompt(cmd)
     try:
-        return subprocess.check_call(cmd, *args, **kwargs)
+        return call_subprocess(subprocess.check_call, cmd, *args, **kwargs)
     except subprocess.CalledProcessError as e:
         print "Warnning: ", e
         if confirm("Would you like to continue?", 'Yn') == 'n':
@@ -31,7 +38,7 @@ def run_check_output(cmd):
 
     if is_verbose_mode():
         try:
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            output = call_subprocess(subprocess.check_output, cmd, stderr=subprocess.STDOUT)
             print output
             return output
         except subprocess.CalledProcessError as e:

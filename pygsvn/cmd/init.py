@@ -4,9 +4,7 @@ from pygsvn.cli import *
 from pygsvn.util import *
 
 def execute(url, path='.'):
-    '''
-    init a repo
-    '''
+    ''' init a repo '''
     run('svn checkout "%s" "%s"' % (url, path))
     run('git init "%s"' % path)
     file_put_contents(os.path.join(path, '.gitignore'), "\n".join(['.svn/', '.bak', '~']))

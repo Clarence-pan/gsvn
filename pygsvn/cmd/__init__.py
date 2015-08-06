@@ -9,61 +9,84 @@ class Executor(object):
             raise TypeError("%s is not executable!" % cmd)
 
         self.cmd = cmd
-        self.cmd_name = cmd.__name__.split('.').pop()
+        self.name = cmd.__name__.split('.').pop()
+        self.full_name = hasattr(cmd, 'name') and cmd.name or self.name
+        self.aliases = hasattr(cmd, 'aliases') and cmd.aliases or []
+        self.cmd_options = None
+
+    def get_cmd_options(self):
+        if self.cmd_options is not None:
+            return self.cmd_options
 
         # options: boolean values
-        if hasattr(cmd, 'options'):
-            cmd_options = [x for x in cmd.options] # convert to list
+        if hasattr(self.cmd, 'options'):
+            cmd_options = [x for x in self.cmd.options] # convert to list
         else:
             cmd_options = []
 
         # add common options:
-        cmd_options.append(Option('help', ('h', '?')))
-        cmd_options.append(Option('verbose', ('v', )))
+        cmd_options.append(Option('help', ('h', '?'), desc='show help info of this command'))
+        cmd_options.append(Option('verbose', ('v', ), desc='show verbose information'))
 
         # build options map
         self.cmd_options = dict(zip([x.name for x in cmd_options], cmd_options))
 
         # add options
-        argspec = inspect.getargspec(cmd.execute)
+        argspec = inspect.getargspec(self.cmd.execute)
         required_args_len = (argspec.args and len(argspec.args) or 0) - (argspec.defaults and len(argspec.defaults) or 0)
-        if argspec.defaults:
-            for k, v in zip(argspec.args[required_args_len:],argspec.defaults):
-                if k not in self.cmd_options:
-                    self.cmd_options[k] = Option(k, type=type(v), value=v)
+        self.required_options = argspec.args and argspec.args[:required_args_len] or []
+        self.optional_options = argspec.args and argspec.defaults and zip(argspec.args[required_args_len:],argspec.defaults) or []
 
-        elif argspec.args:
-            for k in argspec.args[:required_args_len]:
-                if k not in self.cmd_options:
-                    self.cmd_options[k] = Option(k, type=None, required=True)
+        for k, v in self.optional_options:
+            if k not in self.cmd_options:
+                self.cmd_options[k] = Option(k, type=type(v), value=v)
+
+        for k in self.required_options:
+            if k not in self.cmd_options:
+                self.cmd_options[k] = Option(k, type=None, required=True)
+
+        # sort options
+        sorted_options = {}
+        for name in argspec.args:
+            sorted_options[name] = self.cmd_options[name]
+
+        for name, opt in self.cmd_options.items():
+            if name not in sorted_options:
+                sorted_options[name] = opt
+
+        self.cmd_options = sorted_options
+        return self.cmd_options
 
     def execute(self, *args):
         options, rest_args = self.parse_args(args)
-
         # process help command
         if 'help' in options and options['help']:
-            return get_cmd('help').execute(self.cmd_name)
+            return get_cmd('help').execute(self.full_name)
 
         if 'verbose' in options and options['verbose']:
             pygsvn.cli.IS_VERBOSE_MODE = True
 
         argspec = inspect.getargspec(self.cmd.execute)
         if argspec.varargs is None and (len(options) + len(rest_args) > len(argspec.args)):
-            raise ExecutionFailError("Too many arguments for command \"%s\"" % self.cmd_name)
+            raise ExecutionFailError("Too many arguments for command \"%s\"" % self.full_name)
+
+        required_options_len = reduce(lambda sum, x: sum + ((x.required and x.value is not None) and 1 or 0), self.get_cmd_options().values(), 0)
+        if required_options_len + len(rest_args) < len(self.required_options):
+            raise ExecutionFailError("No enough arguments!")
 
         return self.cmd.execute(*rest_args, **options)
 
     def get_doc(self):
-        doc = [self.cmd.execute.__doc__ or self.cmd_name]
+        doc = [self.cmd.execute.__doc__ or self.full_name]
         doc.append("Options:")
-        doc.append("    %-10s  aliases" % 'name')
-        doc.append("    -----------------------")
-        for opt in self.cmd_options:
-            doc.append("    %-10s%s %s" % (opt.name, (opt.required and '*' or ' '), ' '.join(opt.aliases)))
+        doc.append("    %-15s %-20s desc" % ('name', 'aliases'))
+        doc.append("    ---------------------------------------------------")
+        for opt in self.get_cmd_options().values():
+            doc.append("    %-15s %-20s %s" % ((opt.required and '*' or '') + opt.name, ' '.join(opt.aliases), opt.desc))
         return "\n".join(doc)
 
     def get_desc(self):
-        doc = self.cmd.execute.__doc__ or self.cmd_name
+        doc = self.cmd.execute.__doc__ or self.full_name
         lines = doc.split("\n")
         for line in lines:
             line = line.strip()
@@ -114,7 +137,7 @@ class Executor(object):
             else:
                 rest_args.append(arg)
 
-        for name, opt in self.cmd_options:
+        for name, opt in self.get_cmd_options().items():
             if opt.value is not None:
                 options[name] = opt.value
 
@@ -122,10 +145,10 @@ class Executor(object):
 
     def get_option(self, alias=''):
         alias = alias.lower()
-        if alias in self.cmd_options:
+        if alias in self.get_cmd_options():
             return self.cmd_options[alias]
 
-        for opt in self.cmd_options:
+        for opt in self.cmd_options.values():
             if alias in opt.aliases:
                 return opt
 
@@ -133,13 +156,20 @@ class Executor(object):
 
 class Option(object):
     '''represent an option'''
-    def __init__(self, name, aliases=(), type=bool, required=False, value=None):
+    default_desc = {
+        'path': 'path of working directory',
+        'url': 'url of repository',
+        'msg': 'message for logging'
+    }
+
+    def __init__(self, name, aliases=(), type=bool, required=False, value=None, desc=''):
         self.name = name
         self.aliases = aliases
         self.type = type
         self.required = required
         self.value = value
         self.default_value = value
+        self.desc = desc and desc or (name in self.default_desc and self.default_desc[name]) or ''
 
     def set_value(self, value=None):
         """
@@ -174,11 +204,13 @@ def get_all_cmds():
         _, filename = os.path.split(filepath)
         basename, extname = os.path.splitext(filename)
         if basename != '__init__':
-            yield (basename, get_cmd_desc(basename))
+            yield get_cmd(basename, from_alias=False)
 
-def get_cmd(cmd):
+def get_cmd(cmd, from_alias=True):
     try:
-        cmd = get_cmd_from_alias(cmd)
+        if from_alias:
+            cmd = get_cmd_from_alias(cmd)
+
         parent_mod = __import__('pygsvn.cmd.'+cmd)
         cmd_mod = getattr(parent_mod, 'cmd')
         return Executor(getattr(cmd_mod, cmd))
@@ -188,26 +220,10 @@ def get_cmd(cmd):
 def get_cmd_doc(cmd):
     return get_cmd(cmd).get_doc() or cmd
 
-def get_cmd_desc(cmd):
-    return get_cmd(cmd).get_desc()
-
 def get_cmd_from_alias(alias):
     alias = alias.replace('/','').replace('-','')
-    all_alias = get_all_alias()
-    for full_cmd, aliases in all_alias.items():
-        if alias in aliases:
-            return full_cmd
+    for cmd in get_all_cmds():
+        if alias == cmd.name or alias in cmd.aliases:
+            return cmd.name
     return alias
 
-def get_all_alias():
-    return {
-        'help': ('?', 'h', 'help'),
-        'qcommit': ("qc", 'qco'),
-        'commit': ('c', 'co'),
-        'tsvn': ('ts',),
-        'tgit': ('tg',),
-        'validate': ('v', 'va'),
-        'revertdebug': ('undebug', 'udbg', 'ud'),
-        'applydebug': ('redebug', 'ad'),
-        'status': ('st',)
-    }
