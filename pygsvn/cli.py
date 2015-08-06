@@ -10,7 +10,7 @@ def is_verbose_mode():
 
 def call_subprocess(fn, cmd, *params, **kwargs):
     if os.name == 'posix':
-        fn(cmd.split(' '), *params, **kwargs)
+        fn(cmd, shell=True, *params, **kwargs)
     else:
         fn(cmd, *params, **kwargs)
 
@@ -38,7 +38,7 @@ def run_check_output(cmd):
 
     if is_verbose_mode():
         try:
-            output = call_subprocess(subprocess.check_output, cmd, stderr=subprocess.STDOUT)
+            output = call_subprocess(subprocess.check_output, cmd, stderr=subprocess.STDOUT) or ''
             print output
             return output
         except subprocess.CalledProcessError as e:
@@ -46,7 +46,7 @@ def run_check_output(cmd):
             print "=> %d" % e.returncode
             raise
     else:
-        return subprocess.check_output(cmd)
+        return subprocess.check_output(cmd) or ''
 
 def _print_prompt(cmd):
     if is_verbose_mode():
