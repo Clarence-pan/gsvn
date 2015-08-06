@@ -2,7 +2,7 @@ __author__ = 'panchangyun'
 
 from pygsvn import git
 
-def execute(*args):
+def execute():
     '''
     revert debug codes
     '''

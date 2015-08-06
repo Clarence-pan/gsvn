@@ -1,7 +1,7 @@
 from pygsvn import git
 from pygsvn.cli import *
 
-def execute(nostash=True, *args):
+def execute(nostash=True):
     '''
     validate it
     :param nostash: - don't stash, just update it!

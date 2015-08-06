@@ -1,6 +1,6 @@
 import subprocess
 
-def execute(path='.', *args):
+def execute(path='.'):
     '''
     show SVN and git logs
     '''

@@ -1,6 +1,6 @@
 from pygsvn import git
 
-def execute(*args):
+def execute():
     '''
     apply debug codes
     '''

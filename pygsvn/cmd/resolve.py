@@ -1,6 +1,6 @@
 from pygsvn import git,svn
 
-def execute(path='.', *args):
+def execute(path='.'):
     '''
     resolve SVN and git conflicts
     :param path:

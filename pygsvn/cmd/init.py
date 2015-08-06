@@ -3,7 +3,7 @@ import os
 from pygsvn.cli import *
 from pygsvn.util import *
 
-def execute(url, path='.', *args):
+def execute(url, path='.'):
     '''
     init a repo
     '''

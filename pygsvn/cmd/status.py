@@ -1,6 +1,6 @@
 from pygsvn.cli import *
 
-def execute(*args):
+def execute():
     '''
     show current workcopy status
     '''

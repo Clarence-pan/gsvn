@@ -44,14 +44,33 @@ def stash(msg='', check_dirty=True):
 
 def tag(tag, commit=None):
     import os
-    tag_file = os.path.join('.', '.git', 'refs', 'tags', tag)
-    if os.path.isfile(tag_file):
+    if exists_tag(tag):
         run('git tag -d "%s"' % tag)
 
     if commit == None:
         run('git tag "%s"' % tag)
     else:
         run('git tag "%s" "%s"' % (tag, commit))
+
+def exists_tag(tag):
+    tag_file = os.path.join(*('./.git/refs/tags/' + tag).split('/'))
+    if os.path.isfile(tag_file):
+        return True
+
+    packed_refs_file = os.path.join(*'./.git/packed-refs'.split('/'))
+    if os.path.isfile(packed_refs_file):
+        packed_refs_file = open(packed_refs_file)
+        with (packed_refs_file):
+            for line in packed_refs_file:
+                if line[0] == '#':
+                    continue
+
+                commit, ref = str_split2(line.strip())
+                if 'refs/tags/' + tag == ref:
+                    return True
+
+    return False
+
 
 def mark_debug(commit=None):
     tag(TAG_APPLY_DEBUG, commit)

@@ -16,6 +16,6 @@ def execute():
         return 1
 
     run_check_return('git revert --no-edit --no-commit %s' % commit)
-    run_check_return('git commit --message "apply-debug(by make-debug)" .')
+    run_check_return('git commit --message "debug: add debug code(by make-debug)" .')
     git.mark_debug()
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 
-def execute(cmd, path='.', *args):
+def execute(cmd, path='.'):
     """
     execute tortoise SVN
     :param cmd

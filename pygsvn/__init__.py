@@ -10,12 +10,16 @@ def main(argv):
         cmd = argv[1]
         args = argv[2:]
 
-    cmd_executor = pygsvn.cmd.get_cmd(cmd)
-    if cmd_executor == None:
-        print "Error: Unknown cmd '%s'!" % cmd
-        return 1
+    try:
+        cmd_executor = pygsvn.cmd.get_cmd(cmd)
+        if cmd_executor == None:
+            print "Error: Unknown cmd '%s'!" % cmd
+            return 1
 
-    return cmd_executor.execute(*args)
+        return cmd_executor.execute(*args)
+    except pygsvn.cmd.ExecutionFailError as e:
+        print "Error:", e.message
+        return 2
 
 def run():
     sys.exit(main(sys.argv))

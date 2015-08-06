@@ -1,6 +1,6 @@
 from pygsvn.cmd import help
 
-def execute(alias=None, *args):
+def execute(alias=None):
     '''
     there are many aliases, this command show the aliases
     :param alias: which alias to display

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import subprocess
 
-def execute(path='.', *args):
+def execute(path='.'):
     """
     execute tortoise SVN
     :param path [optional] default is '.'

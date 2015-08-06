@@ -2,17 +2,20 @@
 from pygsvn.cli import *
 from pygsvn.util import *
 from pygsvn import git, svn
-from pygsvn.cmd import tsvn, update
+from pygsvn.cmd import tsvn, update, Option
 import os, json
 STATE_FILE = os.path.join(*('./.git/.gsvn-store'.split('/')))
 
-def execute(msg='', *args, **kwargs):
+options = (
+    Option('isContinue', ('c', 'continue')),
+    Option('needConfirm', ('y', 'confirm')),
+)
+
+def execute(msg='', isContinue=False, needConfirm=False):
     '''
     commit changes of working
     :param msg: message of commitment
     '''
-    isContinue = 'continue' in kwargs and kwargs['continue'] or False
-    needConfirm = 'confirm' in kwargs and kwargs['confirm'] or False
 
     try:
         if not msg and not isContinue:

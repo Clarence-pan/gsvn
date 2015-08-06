@@ -3,8 +3,14 @@ import os
 from pygsvn.cli import *
 from pygsvn.util import *
 from pygsvn import git, svn
+from pygsvn.cmd import Option
 
-def execute(nostash=False, *args):
+options = (
+    # name        short  alternative
+    Option('nostash', ('n', 'no-stash')),
+)
+
+def execute(nostash=False):
     '''
     update current workspace form SVN
     :param nostash: do not stash
@@ -17,7 +23,7 @@ def execute(nostash=False, *args):
     if initial['branch'] != 'svn':
         run_check_return('git checkout svn')
 
-    run('svn update --accept postpone')
+    run('svn update --accept postpone .')
 
     if svn.has_conflicts():
         print "There are some SVN conflicts, please resolve before continue."
@@ -32,7 +38,7 @@ def execute(nostash=False, *args):
         run_check_return('git add --all .')
         run_check_return('git commit . -m "update to svn(r%s)"' % revision)
 
-    git.tag('UPDATE-TO-r%s' % revision)
+    #git.tag('UPDATE-TO-r%s' % revision)
 
     if initial['branch'] != 'svn':
         run_check_return('git checkout "%s"' % initial['branch'])
