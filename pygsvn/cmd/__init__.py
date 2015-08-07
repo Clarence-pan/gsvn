@@ -1,9 +1,49 @@
 # -*- coding: utf-8 -*-
 import glob, os, inspect, pygsvn.cli
+
+
+class Option(object):
+    '''represent an option'''
+    default_desc = {
+        'path': 'path of working directory',
+        'url': 'url of repository',
+        'msg': 'message for logging'
+    }
+
+    def __init__(self, name, aliases=(), type=bool, required=False, value=None, desc=''):
+        self.name = name
+        self.aliases = aliases
+        self.type = type
+        self.required = required
+        self.value = value
+        self.default_value = value
+        self.desc = desc and desc or (name in self.default_desc and self.default_desc[name]) or ''
+
+    def set_value(self, value=None):
+        """
+        set value of option
+        :param value: default None
+        :return: need param or not
+        """
+        if self.type is bool:
+            self.value = True
+            return False
+        elif value is None:
+            return self
+        else:
+            self.value = value
+            return False
+
 class Executor(object):
     '''
     implements how to parse arguments and how to execute commands
     '''
+
+    common_options = (
+         Option('help', ('h', '?'), desc='show help info of this command'),
+         Option('verbose', ('v', ), desc='show verbose information'),
+    )
+
     def __init__(self, cmd):
         if not hasattr(cmd, 'execute'):
             raise TypeError("%s is not executable!" % cmd)
@@ -25,8 +65,8 @@ class Executor(object):
             cmd_options = []
 
         # add common options:
-        cmd_options.append(Option('help', ('h', '?'), desc='show help info of this command'))
-        cmd_options.append(Option('verbose', ('v', ), desc='show verbose information'))
+        for opt in self.common_options:
+            cmd_options.append(opt)
 
         # build options map
         self.cmd_options = dict(zip([x.name for x in cmd_options], cmd_options))
@@ -61,10 +101,15 @@ class Executor(object):
         options, rest_args = self.parse_args(args)
         # process help command
         if 'help' in options and options['help']:
-            return get_cmd('help').execute(self.full_name)
+            return get_cmd('help').cmd.execute(self.full_name)
 
         if 'verbose' in options and options['verbose']:
             pygsvn.cli.IS_VERBOSE_MODE = True
+
+        # remove common options if not nessary
+        for opt in self.common_options:
+            if opt.name in options and opt.name not in self.required_options and opt.name not in self.optional_options:
+                del options[opt.name]
 
         argspec = inspect.getargspec(self.cmd.execute)
         if argspec.varargs is None and (len(options) + len(rest_args) > len(argspec.args)):
@@ -153,38 +198,6 @@ class Executor(object):
                 return opt
 
         raise InvalidOptionError('Unknown option "%s"!' % alias)
-
-class Option(object):
-    '''represent an option'''
-    default_desc = {
-        'path': 'path of working directory',
-        'url': 'url of repository',
-        'msg': 'message for logging'
-    }
-
-    def __init__(self, name, aliases=(), type=bool, required=False, value=None, desc=''):
-        self.name = name
-        self.aliases = aliases
-        self.type = type
-        self.required = required
-        self.value = value
-        self.default_value = value
-        self.desc = desc and desc or (name in self.default_desc and self.default_desc[name]) or ''
-
-    def set_value(self, value=None):
-        """
-        set value of option
-        :param value: default None
-        :return: need param or not
-        """
-        if self.type is bool:
-            self.value = True
-            return False
-        elif value is None:
-            return self
-        else:
-            self.value = value
-            return False
 
 class ExecutionFailError(StandardError):
     '''

@@ -9,10 +9,11 @@ def is_verbose_mode():
     return IS_VERBOSE_MODE
 
 def call_subprocess(fn, cmd, *params, **kwargs):
-    if os.name == 'posix':
-        fn(cmd, shell=True, *params, **kwargs)
+    # under linux, must use shell to run string cmd
+    if os.name == 'posix' and type(cmd) is str:
+        return fn(cmd, shell=True, *params, **kwargs)
     else:
-        fn(cmd, *params, **kwargs)
+        return fn(cmd, *params, **kwargs)
 
 def run(cmd):
     _print_prompt(cmd)
@@ -50,7 +51,7 @@ def run_check_output(cmd):
 
 def _print_prompt(cmd):
     if is_verbose_mode():
-        print '#', cmd
+        print '#', type(cmd) is str and cmd or ' '.join([(str_contains(' ', x) and '"' + x + '"') or x for x in cmd])
 
 
 def confirm(prompt, options):

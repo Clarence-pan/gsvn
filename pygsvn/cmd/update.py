@@ -10,17 +10,14 @@ options = (
 )
 
 def execute(nostash=False):
-    '''
-    update current workspace form SVN
-    :param nostash: do not stash
-    '''
+    ''' update current workspace form SVN '''
     initial = git.get_status()
     if initial['isDirty']:
         if not nostash:
             git.stash('before update', check_dirty=False)
 
     if initial['branch'] != 'svn':
-        run_check_confirm('git checkout svn')
+        run_check_confirm(['git', 'checkout', 'svn'])
 
     run('svn update --accept postpone .')
 
@@ -35,10 +32,10 @@ def execute(nostash=False):
     status = git.get_status()
     if status['files']:
         run_check_confirm('git add --all .')
-        run_check_confirm('git commit . -m "update to svn(r%s)"' % revision)
+        run_check_confirm(['git', 'commit', '.', '-m', "update to svn(r%s)" % revision])
 
     #git.tag('UPDATE-TO-r%s' % revision)
 
     if initial['branch'] != 'svn':
-        run_check_confirm('git checkout "%s"' % initial['branch'])
-        run_check_confirm('git merge svn')
+        run_check_confirm(['git', 'checkout', initial['branch']])
+        run_check_confirm(['git', 'merge', '--no-ff', 'svn'])
