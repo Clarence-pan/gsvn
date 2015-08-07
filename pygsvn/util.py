@@ -29,8 +29,11 @@ def str_contains(needle, haystack):
         return False
 
 def str_split2(text, spliter=' '):
-    try:
-        pos = text.index(spliter)
-        return (text[:pos], text[pos+1:])
-    except:
-        return (text, '')
+    if not text:
+        return ('', '')
+    return str(text).split(spliter, 1)
+    #try:
+    #    pos = text.index(spliter)
+    #    return (text[:pos], text[pos+1:])
+    #except:
+    #    return (text, '')

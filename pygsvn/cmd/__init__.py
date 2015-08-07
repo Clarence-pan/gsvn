@@ -212,9 +212,9 @@ class InvalidOptionError(ExecutionFailError):
     pass
 
 def get_all_cmds():
-    cmd_dir, _ = os.path.split(__file__)
+    cmd_dir = os.path.dirname(__file__)
     for filepath in glob.glob(os.path.join(cmd_dir, '*.py')):
-        _, filename = os.path.split(filepath)
+        filename = os.path.basename(filepath)
         basename, extname = os.path.splitext(filename)
         if basename != '__init__':
             yield get_cmd(basename, from_alias=False)
