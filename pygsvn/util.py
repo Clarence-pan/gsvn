@@ -10,12 +10,10 @@ def find_first_group_matches(pattern, context):
 
 
 def file_put_contents(filepath, contents):
-    f = open(filepath, 'wt')
-    with(f):
+    with open(filepath, 'wt') as f:
         f.write(contents)
 
 def file_get_contents(filepath):
-    f = open(filepath, 'rt')
-    with(f):
+    with open(filepath, 'rt') as f:
         return f.read()
 
