@@ -172,9 +172,9 @@ class Executor(object):
         doc.append("    %-15s %-20s desc" % ('name', 'aliases'))
         doc.append("    ---------------------------------------------------")
         options = self.get_cmd_options()
-        names = list(self.required_options)
-        names.extend([ k for k, v in self.optional_options]) # note: extend has no return value
-        names.extend([ opt.name for opt in self.common_options])
+        names = self.required_options + \
+                [ k for k, v in self.optional_options] + \
+                [ opt.name for opt in self.common_options]
         for name in names:
             opt = options[name]
             doc.append("    %-15s %-20s %s" % (opt.quote(), ' '.join([opt.quote(x) for x in opt.aliases if x != opt.get_long_name()]), opt.desc))
