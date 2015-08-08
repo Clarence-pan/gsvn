@@ -51,7 +51,7 @@ def run_check_output(cmd):
 
 def _print_prompt(cmd):
     if is_verbose_mode():
-        print '#', type(cmd) is str and cmd or ' '.join([(str_contains(' ', x) and '"' + x + '"') or x for x in cmd])
+        print '#', type(cmd) is str and cmd or ' '.join([((' ' in x) and '"' + x + '"') or x for x in cmd])
 
 
 def confirm(prompt, options):

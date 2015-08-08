@@ -19,21 +19,3 @@ def file_get_contents(filepath):
     with(f):
         return f.read()
 
-
-
-def str_contains(needle, haystack):
-    try:
-        haystack.index(needle)
-        return True
-    except:
-        return False
-
-def str_split2(text, spliter=' '):
-    if not text:
-        return ('', '')
-    return str(text).split(spliter, 1)
-    #try:
-    #    pos = text.index(spliter)
-    #    return (text[:pos], text[pos+1:])
-    #except:
-    #    return (text, '')

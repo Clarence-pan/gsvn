@@ -7,12 +7,12 @@ TAG_APPLY_DEBUG = 'APPLY-DEBUG'
 
 def is_dirty():
     r = run_check_output('git status --porcelain') or ''
-    files = [ str_split2(x.strip()) for x in r.split("\n") if x.strip() != '' ]
+    files = [ x.strip().split(' ', 1) for x in r.split("\n") if x.strip() != '' ]
     return len(files) > 0
 
 def get_status():
     r = run_check_output('git status --porcelain') or ''
-    files = [ str_split2(x.strip()) for x in r.split("\n") if x.strip() != '' ]
+    files = [ x.strip().split(' ', 1) for x in r.split("\n") if x.strip() != '' ]
     return {
         'branch' : get_current_branch(),
         'isDirty': len(files) > 0,
@@ -65,7 +65,7 @@ def exists_tag(tag):
                 if line[0] == '#':
                     continue
 
-                commit, ref = str_split2(line.strip())
+                commit, ref = line.strip().split(' ', 1)
                 if 'refs/tags/' + tag == ref:
                     return True
 
@@ -90,7 +90,7 @@ def get_log(options):
     for line in r.split("\n"):
         line = line.strip()
         if line:
-            sha, comment = str_split2(line)
+            sha, comment = line.split(' ', 1)
             yield {'sha': sha, 'comment': comment}
 
 
@@ -102,7 +102,7 @@ def try_commit(msg, dir='.'):
 
 def has_conflicts(path='.'):
     r = run_check_output('git status --porcelain') or ''
-    files = [ str_split2(x.strip()) for x in r.split("\n") if x.strip() != '' ]
+    files = [ x.strip().split(' ',) for x in r.split("\n") if x.strip() != '' ]
     for status, file in files:
         if 'U' in status:
             return True
