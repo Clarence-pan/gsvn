@@ -141,10 +141,10 @@ class Executor(object):
     def execute(self, *args):
         options, rest_args = self.parse_args(args)
         # process help command
-        if 'help' in options and options['help']:
+        if options.get('help', False):
             return get_cmd('help').cmd.execute(self.full_name)
 
-        if 'verbose' in options and options['verbose']:
+        if options.get('verbose', False):
             pygsvn.cli.IS_VERBOSE_MODE = True
 
         # remove common options if not nessary
