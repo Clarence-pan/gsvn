@@ -15,9 +15,6 @@ options = (
 
 def execute(msg, isContinue=False, needConfirm=False):
     ''' commit changes of working '''
-    print (msg, isContinue, needConfirm)
-    return
-
     try:
         if not msg and not isContinue:
             print 'Error: please specify the message of commit.'

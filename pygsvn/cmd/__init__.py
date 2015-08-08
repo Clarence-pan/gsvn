@@ -34,6 +34,33 @@ class Option(object):
             self.value = value
             return False
 
+    def get_long_name(self):
+        import re
+        if re.match('^[a-z]+$', self.name):
+            return self.name
+
+        for alias in self.aliases:
+            if len(alias) != 1:
+                return alias
+
+        return self.name
+
+    def quote(self, name=None, with_default_value=False):
+        name = name or self.get_long_name()
+        if self.type is bool:
+            if len(name) == 1:
+                return '-' + name
+            else:
+                return '--' + name
+        elif len(name) == 1:
+            return '-%s:' % name
+        elif self.required:
+            return '<' + name + '>'
+        elif with_default_value:
+            return '[%s=%s]' % (name, self.default_value)
+        else:
+            return '[' + name + ']'
+
 class Executor(object):
     '''
     implements how to parse arguments and how to execute commands
@@ -94,16 +121,20 @@ class Executor(object):
         for name in self.required_options:
             opt = self.cmd_options[name]
             if opt.type is not bool:
-                form.append('<' + opt.name + '>')
+                form.append(opt.quote())
 
         for name, _ in self.optional_options:
             opt = self.cmd_options[name]
             if opt.type is not bool:
-                form.append('[' + opt.name + ']')
+                form.append(opt.quote(with_default_value=True))
 
-        for opt in self.cmd_options.values():
-            if opt.type is bool:
-                form.append('--' + opt.name)
+        #common_option_names = [opt.name for opt in self.common_options]
+        #for opt in self.cmd_options.values():
+        #    if opt.type is bool and opt.name not in common_option_names:
+        #        form.append(opt.quote())
+
+        #for opt in self.common_options:
+        #    form.append(opt.quote())
 
         return ' '.join(form)
 
@@ -125,23 +156,28 @@ class Executor(object):
         if argspec.varargs is None and (len(options) + len(rest_args) > len(argspec.args)):
             raise ExecutionFailError("Too many arguments for command \"%s\"" % self.full_name)
 
-        required_options_len = reduce(lambda sum, x: sum + ((x.required and x.value is not None) and 1 or 0), self.get_cmd_options().values(), 0)
-        if required_options_len + len(rest_args) < len(self.required_options):
+        required_rest_len = reduce(lambda sum, x: \
+                                        sum - ((x.required and x.name in options) and 1 or 0), \
+                                   self.get_cmd_options().values(),\
+                                   len(self.required_options))
+        if required_rest_len > len(rest_args):
             raise ExecutionFailError("No enough arguments!")
 
         return self.cmd.execute(*rest_args, **options)
 
     def get_doc(self):
         doc = [self.cmd.execute.__doc__ or self.full_name]
+        doc.append('')
         doc.append("Options:")
         doc.append("    %-15s %-20s desc" % ('name', 'aliases'))
         doc.append("    ---------------------------------------------------")
         options = self.get_cmd_options()
         names = list(self.required_options)
         names.extend([ k for k, v in self.optional_options]) # note: extend has no return value
+        names.extend([ opt.name for opt in self.common_options])
         for name in names:
             opt = options[name]
-            doc.append("    %-15s %-20s %s" % ((opt.required and '*' or '') + opt.name, ' '.join(opt.aliases), opt.desc))
+            doc.append("    %-15s %-20s %s" % (opt.quote(), ' '.join([opt.quote(x) for x in opt.aliases if x != opt.get_long_name()]), opt.desc))
         return "\n".join(doc)
 
     def get_desc(self):
@@ -153,6 +189,28 @@ class Executor(object):
                 return line
 
     def parse_args(self, args):
+        import getopt
+        shortopts = []
+        longopts = []
+
+        for opt in self.get_cmd_options().values():
+            longopts.append(opt.name)
+            for alias in opt.aliases:
+                if len(alias) == 1:
+                    shortopts.append(alias + (opt.type is not bool and ':' or ''))
+                else:
+                    longopts.append(alias + (opt.type is not bool and '=' or ''))
+
+        options, rest_args = getopt.getopt(args, ''.join(shortopts), longopts)
+
+        options_map = {}
+        for k, v in options:
+            opt = self.get_option(k.lstrip('-'))
+            options_map[opt.name] = opt.type is bool and True or v
+
+        return (options_map, rest_args)
+
+    def parse_args_old(self, args):
         '''
         parse commandline arguments.
         * '--' means all following is arguments, not options
@@ -203,11 +261,11 @@ class Executor(object):
         return (options, rest_args)
 
     def get_option(self, alias=''):
-        alias = alias.lower()
-        if alias in self.get_cmd_options():
-            return self.cmd_options[alias]
+        options = self.get_cmd_options()
+        if alias in options:
+            return options[alias]
 
-        for opt in self.cmd_options.values():
+        for opt in options.values():
             if alias in opt.aliases:
                 return opt
 

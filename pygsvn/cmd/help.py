@@ -14,9 +14,10 @@ def execute(cmd=None, *args):
             print "About `%s`: " % cmd
             print " ", cmd_obj.get_cmd_form()
             if cmd_obj.aliases:
+                print
                 print "  alias:", ' '.join(cmd_obj.aliases)
             print
-            print cmd_obj.get_doc().lstrip().capitalize()
+            print ' ', cmd_obj.get_doc().lstrip()
     else:
         print "About gsvn:"
         print "      gsvn  - a tool to make svn works with git!"
@@ -24,4 +25,4 @@ def execute(cmd=None, *args):
         print "Commands:"
 
         for cmd_obj in get_all_cmds():
-            print "  %-15s - %s" % (cmd_obj.full_name, cmd_obj.get_desc)
+            print "  %-15s - %s" % (cmd_obj.full_name, cmd_obj.get_desc())
