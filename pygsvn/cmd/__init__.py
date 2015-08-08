@@ -85,17 +85,27 @@ class Executor(object):
             if k not in self.cmd_options:
                 self.cmd_options[k] = Option(k, type=None, required=True)
 
-        # sort options
-        sorted_options = {}
-        for name in argspec.args:
-            sorted_options[name] = self.cmd_options[name]
-
-        for name, opt in self.cmd_options.items():
-            if name not in sorted_options:
-                sorted_options[name] = opt
-
-        self.cmd_options = sorted_options
         return self.cmd_options
+
+    def get_cmd_form(self):
+        form = [self.full_name]
+        options = self.get_cmd_options()
+
+        for name in self.required_options:
+            opt = self.cmd_options[name]
+            if opt.type is not bool:
+                form.append('<' + opt.name + '>')
+
+        for name, _ in self.optional_options:
+            opt = self.cmd_options[name]
+            if opt.type is not bool:
+                form.append('[' + opt.name + ']')
+
+        for opt in self.cmd_options.values():
+            if opt.type is bool:
+                form.append('--' + opt.name)
+
+        return ' '.join(form)
 
     def execute(self, *args):
         options, rest_args = self.parse_args(args)
@@ -126,7 +136,11 @@ class Executor(object):
         doc.append("Options:")
         doc.append("    %-15s %-20s desc" % ('name', 'aliases'))
         doc.append("    ---------------------------------------------------")
-        for opt in self.get_cmd_options().values():
+        options = self.get_cmd_options()
+        names = list(self.required_options)
+        names.extend([ k for k, v in self.optional_options]) # note: extend has no return value
+        for name in names:
+            opt = options[name]
             doc.append("    %-15s %-20s %s" % ((opt.required and '*' or '') + opt.name, ' '.join(opt.aliases), opt.desc))
         return "\n".join(doc)
 

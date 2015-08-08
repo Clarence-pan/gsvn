@@ -12,9 +12,11 @@ def execute(cmd=None, *args):
             print "Unknown command '%s'." % cmd
         else:
             print "About `%s`: " % cmd
-            print "Full command: ", cmd_obj.full_name
-            print "Alias: ", ' '.join(cmd_obj.aliases)
-            print ' ', get_cmd_doc(cmd).lstrip().capitalize()
+            print " ", cmd_obj.get_cmd_form()
+            if cmd_obj.aliases:
+                print "  alias:", ' '.join(cmd_obj.aliases)
+            print
+            print cmd_obj.get_doc().lstrip().capitalize()
     else:
         print "About gsvn:"
         print "      gsvn  - a tool to make svn works with git!"
