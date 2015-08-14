@@ -76,7 +76,7 @@ def mark_debug(commit=None):
     tag(TAG_APPLY_DEBUG, commit)
 
 def revert_debug():
-    return run('git revert --no-edit %s ' % TAG_APPLY_DEBUG)
+    return run_check_confirm('git revert --no-edit %s ' % TAG_APPLY_DEBUG)
 
 def apply_debug():
     try:
@@ -102,7 +102,7 @@ def try_commit(msg, dir='.'):
 
 def has_conflicts(path='.'):
     r = run_check_output('git status --porcelain') or ''
-    files = [ x.strip().split(' ',) for x in r.split("\n") if x.strip() != '' ]
+    files = [ x.strip().split(' ', 1) for x in r.split("\n") if x.strip() != '' ]
     for status, file in files:
         if 'U' in status:
             return True

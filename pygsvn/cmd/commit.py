@@ -8,28 +8,23 @@ STATE_FILE = os.path.join(*('./.git/.gsvn-store'.split('/')))
 
 aliases = ('c', 'co')
 options = (
-    Option('isContinue', ('c', 'continue'), desc='is to continue previous commitment'),
-    Option('needConfirm', ('y', 'confirm'), desc='need confirm or not before commit to SVN'),
-    Option('msg', ('m', 'message'), type='string', required=True, desc='message of commitment')
+    Option('needConfirm', ('c', 'y', 'confirm'), desc='need confirm or not before commit to SVN'),
+    Option('msg', ('m', 'message'), type='string', required=False, desc='message of commitment')
 )
 
-def execute(msg, isContinue=False, needConfirm=False):
+def execute(msg='', needConfirm=False):
     ''' commit changes of working '''
     try:
-        if not msg and not isContinue:
+        if not msg and not needConfirm:
             print 'Error: please specify the message of commit.'
             return 1
 
-        if not isContinue:
-            if git.is_dirty():
-                print 'Error: dirty working directory! Please stash or commit local changes to git.'
-                return 1
-            git.revert_debug()
-        else:
-            state = load_state()
-            if not state or state['state'] != 'commit':
-                print "Error: invalid state!"
-                return 1
+        if git.is_dirty():
+            print 'Error: dirty working directory! Please stash or commit local changes to git.'
+            return 1
+
+        initial_branch = git.checkout_branch('svn')
+        git.revert_debug()
 
         if needConfirm:
             tsvn.execute('commit')
@@ -40,6 +35,7 @@ def execute(msg, isContinue=False, needConfirm=False):
         git.tag('COMMITED')
         update.execute(True)
         git.apply_debug()
+        git.checkout_branch(initial_branch)
     except Exception, e:
         print "Error: commit failed! Please solve the conflicts and use 'gsvn commit --continue' to go on."
         print e
