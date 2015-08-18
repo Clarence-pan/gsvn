@@ -4,5 +4,5 @@ import subprocess
 name = 'tsvn-log'
 
 def execute(path='.'):
-    """ execute tortoise SVN """
+    """ execute tortoise SVN log """
     return subprocess.Popen("TortoiseProc /command:log /path:%s" % path)
