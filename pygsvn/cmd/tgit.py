@@ -4,7 +4,7 @@ from pygsvn.cmd import Option
 
 aliases = ('tg', )
 options = (
-    Option('cmd', ('c', 'e', 'command', 'execute'), type='string', required=True, desc='command to execute'),
+    Option('cmd', ('c', 'e', 'command'), type='string', required=True, desc='command to execute'),
     Option('path', ('p',), type='string', desc='path to execute command')
 )
 
