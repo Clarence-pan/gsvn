@@ -294,7 +294,7 @@ def get_all_cmds():
 def get_cmd(cmd, from_alias=True):
     try:
         if from_alias:
-            cmd = get_cmd_from_alias(cmd)
+            return get_cmd_from_alias(cmd)
 
         parent_mod = __import__('pygsvn.cmd.'+cmd)
         cmd_mod = getattr(parent_mod, 'cmd')
@@ -309,6 +309,6 @@ def get_cmd_from_alias(alias):
     alias = alias.replace('/','').replace('-','')
     for cmd in get_all_cmds():
         if alias == cmd.name or alias in cmd.aliases:
-            return cmd.name
-    return alias
+            return cmd
+    return None
 
