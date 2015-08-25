@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
+from pygsvn.cli import *
 from pygsvn.cmd import tgit
 
 aliases = ('ts',)
@@ -7,4 +7,4 @@ options = tgit.options
 
 def execute(cmd, path='.'):
     """ execute tortoise SVN """
-    return os.system("TortoiseProc /command:%s /path:%s" % (cmd, path))
+    return run_check_confirm(['TortoiseProc', '/command:%s' % cmd, '/path:%s' % path])
