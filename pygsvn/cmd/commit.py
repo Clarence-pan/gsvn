@@ -33,7 +33,7 @@ def execute(msg='', needConfirm=False):
             svn.commit(msg)
 
         git.tag('COMMITED')
-        update.execute(True)
+        #update.execute(True)
         git.apply_debug()
         git.checkout_branch(initial_branch)
     except Exception, e:

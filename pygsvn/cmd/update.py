@@ -19,7 +19,7 @@ def execute(nostash=False):
     if initial['branch'] != 'svn':
         run_check_confirm(['git', 'checkout', 'svn'])
 
-    run('svn update --accept postpone .')
+    update_output = run_check_output('svn update --accept postpone .')
 
     if svn.has_conflicts():
         print "There are some SVN conflicts, please resolve before continue."
@@ -39,3 +39,7 @@ def execute(nostash=False):
     if initial['branch'] != 'svn':
         run_check_confirm(['git', 'checkout', initial['branch']])
         run_check_confirm(['git', 'merge', '--no-ff', 'svn'])
+
+    print
+    print "--- Updated ---"
+    print update_output
