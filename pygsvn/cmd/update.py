@@ -15,7 +15,7 @@ def execute(nostash=False):
     stash_tag = ''
     if initial['isDirty']:
         if not nostash:
-            stash_tag = git.stash('before update', check_dirty=False)
+            stash_tag = git.stash('auto stash before update', check_dirty=False)
 
     if initial['branch'] != 'svn':
         run_check_confirm(['git', 'checkout', 'svn'])
