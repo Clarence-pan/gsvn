@@ -12,9 +12,10 @@ options = (
 def execute(nostash=False):
     ''' update current workspace form SVN '''
     initial = git.get_status()
+    stash_tag = ''
     if initial['isDirty']:
         if not nostash:
-            git.stash('before update', check_dirty=False)
+            stash_tag = git.stash('before update', check_dirty=False)
 
     if initial['branch'] != 'svn':
         run_check_confirm(['git', 'checkout', 'svn'])
@@ -39,6 +40,9 @@ def execute(nostash=False):
     if initial['branch'] != 'svn':
         run_check_confirm(['git', 'checkout', initial['branch']])
         run_check_confirm(['git', 'merge', '--no-ff', 'svn'])
+
+    if stash_tag:
+        git.pop_stash(stash_tag)
 
     print
     print "--- Updated ---"

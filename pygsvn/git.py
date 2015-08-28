@@ -37,10 +37,19 @@ def stash(msg='', check_dirty=True):
         old_branch = get_current_branch()
         import time
         msg = msg or "stash at " + time.strftime("%Y-%m-%d-%H:%M:%S")
-        run_check_return('git checkout -b stash-%s' % time.strftime("%Y%m%d-%H%M%S"))
+        tag = 'stash-' + time.strftime("%Y%m%d-%H%M%S")
+        run_check_return('git checkout -b "%s"' % tag)
         run_check_return('git add --all .')
         run_check_return('git commit -m "%s"' % msg)
         run_check_return('git checkout "%s"' % old_branch)
+        return tag
+    return ''
+
+def pop_stash(tag):
+    if tag:
+        run_check_confirm(['git', 'merge', '--no-ff', tag])
+        run_check_confirm(['git', 'branch', '-d', tag])
+
 
 def tag(tag, commit=None):
     import os
