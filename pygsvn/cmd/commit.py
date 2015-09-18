@@ -28,6 +28,9 @@ def execute(msg='', needConfirm=False):
 
         if needConfirm:
             tsvn.execute('commit')
+            if git.is_dirty():
+                run_check_confirm('git add --all .')
+                run_check_confirm(['git', 'commit', '-m', 'auto commit after commit to svn'])
         else:
             # run('svn commit --message "%s"' % msg)
             svn.commit(msg)

@@ -1,4 +1,4 @@
-from pygsvn import git
+from pygsvn import git, svn
 from pygsvn.cli import *
 from pygsvn.util import *
 
@@ -8,6 +8,7 @@ def execute():
     ''' make debug from SVN changes '''
     git.stash('before make-debug')
     run_check_return('svn revert -R .')
+    svn.remove_all_unversioned_files()
     run_check_return('git add --all .')
     r = run_check_output('git commit . -m "revert-debug"')
     commit = find_first_group_matches('\[.+\s+(.*)\]', r)

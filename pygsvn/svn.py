@@ -39,3 +39,15 @@ def get_status(path='.'):
             else:
                 status_files[status].append(file)
     return status_files
+
+def get_unversioned_files(path='.'):
+    r = run_check_output(['svn', 'status', path])
+    return [x[8:].strip() for x in r.strip().split("\n") if x.strip() != '' and x[0] == '?']
+
+def remove_all_unversioned_files(path='.'):
+    unversioned_files = get_unversioned_files(path)
+    for f in unversioned_files:
+        if os.path.isdir(f):
+            run_check_confirm(['rm', '-rf', f])
+        else:
+            run_check_confirm(['rm', '-f', f])
