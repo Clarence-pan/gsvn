@@ -24,6 +24,7 @@ def execute(msg='', needConfirm=False):
             return 1
 
         initial_branch = git.checkout_branch('svn')
+        run_check_confirm('git checkout -b commiting')
         git.revert_debug()
 
         if needConfirm:
@@ -38,6 +39,9 @@ def execute(msg='', needConfirm=False):
         git.tag('COMMITED')
         #update.execute(True)
         git.apply_debug()
+        run_check_confirm('git checkout svn')
+        run_check_confirm('git merge commiting --no-ff')
+        run_check_confirm('git branch -d commiting')
         git.checkout_branch(initial_branch)
     except Exception, e:
         print "Error: commit failed! Please solve the conflicts and use 'gsvn commit --continue' to go on."
