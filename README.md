@@ -43,3 +43,7 @@ gsvn make-debug
 将会把当前SVN的修改标记为debug代码，这些代码将不会被提交到SVN上。
 
 
+注意事项
+--------------------
+
+如果出现git和svn的换行不一致的情况，请执行`git config core.autocrlf false`，防止git在提交代码的时候自动转换换行符。
